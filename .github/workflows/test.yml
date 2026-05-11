@@ -28,10 +28,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    defaults:
-      run:
-        working-directory: module10_is601
-
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +38,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('module10_is601/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
@@ -84,7 +80,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-html
-          path: module10_is601/htmlcov/
+          path: htmlcov/
 
   # ---------------------------------------------------------------------------
   # Security scan — build the Docker image and run Trivy
@@ -92,10 +88,6 @@ jobs:
   security:
     needs: test
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: module10_is601
 
     steps:
       - uses: actions/checkout@v4
@@ -133,7 +125,7 @@ jobs:
 
       - uses: docker/build-push-action@v5
         with:
-          context: module10_is601
+          context: .
           push: true
           tags: |
             kaw393939/601_module10:latest
