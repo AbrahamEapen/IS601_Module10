@@ -105,11 +105,11 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
   # ---------------------------------------------------------------------------
-  # Deploy — push multi-arch image to Docker Hub on main branch only
+  # Deploy — push multi-arch image to Docker Hub after tests and security scan
   # ---------------------------------------------------------------------------
   deploy:
     needs: security
-    if: github.ref == 'refs/heads/main' && secrets.DOCKERHUB_USERNAME != ''
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
 
@@ -128,8 +128,9 @@ jobs:
           context: .
           push: true
           tags: |
-            kaw393939/601_module10:latest
-            kaw393939/601_module10:${{ github.sha }}
+            docsnoop/601_module10:latest
+            docsnoop/601_module10:${{ github.sha }}
           platforms: linux/amd64,linux/arm64
-          cache-from: type=registry,ref=kaw393939/601_module10:cache
+          cache-from: type=registry,ref=docsnoop/601_module10:cache
           cache-to: type=inline,mode=max
+
