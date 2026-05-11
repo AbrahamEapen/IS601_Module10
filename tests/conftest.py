@@ -48,14 +48,16 @@ def create_fake_user() -> Dict[str, str]:
     Generate a dictionary of fake user data for testing.
 
     Returns:
-        A dict containing user fields with fake data.
+        A dict with user fields. 'password' is plain-text for use with
+        User.register(); 'first_name'/'last_name' are included for tests
+        that create User() objects directly.
     """
     return {
         "first_name": fake.first_name(),
         "last_name": fake.last_name(),
-        "email": fake.unique.email(),  # Ensure uniqueness where necessary
+        "email": fake.unique.email(),
         "username": fake.unique.user_name(),
-        "password": fake.password(length=12)
+        "password": fake.password(length=12),
     }
 
 @contextmanager
@@ -171,10 +173,16 @@ def fake_user_data() -> Dict[str, str]:
 @pytest.fixture
 def test_user(db_session: Session) -> User:
     """
-    Create and return a single test user.
+    Create and return a single test user with a properly hashed password.
     """
     user_data = create_fake_user()
-    user = User(**user_data)
+    user = User(
+        first_name=user_data["first_name"],
+        last_name=user_data["last_name"],
+        email=user_data["email"],
+        username=user_data["username"],
+        password_hash=User.hash_password(user_data["password"]),
+    )
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
@@ -199,7 +207,13 @@ def seed_users(db_session: Session, request) -> List[User]:
     users = []
     for _ in range(num_users):
         user_data = create_fake_user()
-        user = User(**user_data)
+        user = User(
+            first_name=user_data["first_name"],
+            last_name=user_data["last_name"],
+            email=user_data["email"],
+            username=user_data["username"],
+            password_hash=User.hash_password(user_data["password"]),
+        )
         users.append(user)
         db_session.add(user)
 

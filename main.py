@@ -56,6 +56,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={"error": error_messages},
     )
 
+@app.get("/health")
+async def health_check():
+    """Liveness probe used by Docker HEALTHCHECK and load balancers."""
+    return {"status": "ok"}
+
 @app.get("/")
 async def read_root(request: Request):
     """

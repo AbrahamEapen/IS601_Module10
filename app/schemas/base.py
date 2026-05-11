@@ -23,7 +23,7 @@ class PasswordMixin(BaseModel):
     def validate_password(cls, values: dict) -> dict:
         password = values.get("password")
         if not password:
-            raise ValidationError("Password is required", model=cls) # pragma: no cover
+            raise ValidationError("Password is required", model=cls)  # pragma: no cover
         if len(password) < 6:
             raise ValueError("Password must be at least 6 characters long")
         if not any(char.isupper() for char in password):
@@ -35,9 +35,12 @@ class PasswordMixin(BaseModel):
         return values
 
 
-class UserCreate(UserBase, PasswordMixin):
-    """Schema for user creation"""
-    pass
+class UserCreate(PasswordMixin):
+    """Schema for user creation — requires username, email, and password only."""
+    username: str = Field(min_length=3, max_length=50, example="johndoe")
+    email: EmailStr = Field(example="john.doe@example.com")
+
+    model_config = ConfigDict(from_attributes=True, extra="ignore")
 
 
 class UserLogin(PasswordMixin):

@@ -3,19 +3,29 @@ from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, ConfigDict
 
+
+class UserRead(BaseModel):
+    """Schema for returning user details — password_hash is excluded."""
+    username: str
+    email: EmailStr
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class UserResponse(BaseModel):
-    """Schema for user response data"""
+    """Schema for full user response data"""
     id: UUID
     username: str
     email: EmailStr
-    first_name: str
-    last_name: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     is_active: bool
     is_verified: bool
     created_at: datetime
     updated_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)  # Enable mapping from ORM objects
+    model_config = ConfigDict(from_attributes=True)
 
 
 class Token(BaseModel):
@@ -33,8 +43,8 @@ class Token(BaseModel):
                     "id": "123e4567-e89b-12d3-a456-426614174000",
                     "username": "johndoe",
                     "email": "john.doe@example.com",
-                    "first_name": "John",
-                    "last_name": "Doe",
+                    "first_name": None,
+                    "last_name": None,
                     "is_active": True,
                     "is_verified": False,
                     "created_at": "2025-01-01T00:00:00",

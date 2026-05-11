@@ -23,15 +23,26 @@ SECRET_KEY = "your-secret-key"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+
+def hash_password(plain_password: str) -> str:
+    """Hash a plain-text password using bcrypt."""
+    return pwd_context.hash(plain_password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    """Verify a plain-text password against a bcrypt hash."""
+    return pwd_context.verify(plain_password, hashed_password)
+
+
 class User(Base):
     __tablename__ = 'users'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    first_name = Column(String(50), nullable=False)
-    last_name = Column(String(50), nullable=False)
+    first_name = Column(String(50), nullable=True)
+    last_name = Column(String(50), nullable=True)
     email = Column(String(120), unique=True, nullable=False)
     username = Column(String(50), unique=True, nullable=False)
-    password = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
     last_login = Column(DateTime, nullable=True)
@@ -39,16 +50,17 @@ class User(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     def __repr__(self):
-        return f"<User(name={self.first_name} {self.last_name}, email={self.email})>"
+        name = f"{self.first_name or ''} {self.last_name or ''}".strip() or "N/A"
+        return f"<User(name={name}, email={self.email})>"
 
     @staticmethod
     def hash_password(password: str) -> str:
         """Hash a password using bcrypt."""
-        return pwd_context.hash(password)
+        return hash_password(password)
 
     def verify_password(self, plain_password: str) -> bool:
-        """Verify a plain password against the hashed password."""
-        return pwd_context.verify(plain_password, self.password)
+        """Verify a plain password against the stored password_hash."""
+        return verify_password(plain_password, self.password_hash)
 
     @staticmethod
     def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -74,38 +86,36 @@ class User(Base):
         try:
             # Validate password length first
             password = user_data.get('password', '')
-            if len(password) < 6:  # Strictly less than 6 characters
+            if len(password) < 6:
                 raise ValueError("Password must be at least 6 characters long")
-            
+
             # Check if email/username exists
             existing_user = db.query(cls).filter(
                 (cls.email == user_data.get('email')) |
                 (cls.username == user_data.get('username'))
             ).first()
-            
+
             if existing_user:
                 raise ValueError("Username or email already exists")
 
-            # Validate using Pydantic schema
+            # Validate using Pydantic schema (extra fields like first_name/last_name are ignored)
             user_create = UserCreate.model_validate(user_data)
-            
+
             # Create new user instance
             new_user = cls(
-                first_name=user_create.first_name,
-                last_name=user_create.last_name,
                 email=user_create.email,
                 username=user_create.username,
-                password=cls.hash_password(user_create.password),
+                password_hash=hash_password(user_create.password),
                 is_active=True,
                 is_verified=False
             )
-            
+
             db.add(new_user)
             db.flush()
             return new_user
-            
+
         except ValidationError as e:
-            raise ValueError(str(e)) # pragma: no cover
+            raise ValueError(str(e))  # pragma: no cover
         except ValueError as e:
             raise e
 
@@ -117,7 +127,7 @@ class User(Base):
         ).first()
 
         if not user or not user.verify_password(password):
-            return None # pragma: no cover
+            return None  # pragma: no cover
 
         user.last_login = datetime.utcnow()
         db.commit()

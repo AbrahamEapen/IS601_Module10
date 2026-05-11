@@ -64,27 +64,60 @@ def test_password_mixin_no_digit():
 
 
 def test_user_create_valid():
-    """Test UserCreate with valid data."""
+    """Test UserCreate with username, email, and password."""
     data = {
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john.doe@example.com",
         "username": "johndoe",
+        "email": "john.doe@example.com",
         "password": "SecurePass123",
     }
     user_create = UserCreate(**data)
     assert user_create.username == "johndoe"
+    assert user_create.email == "john.doe@example.com"
     assert user_create.password == "SecurePass123"
 
 
-def test_user_create_invalid_password():
-    """Test UserCreate with invalid password."""
+def test_user_create_ignores_extra_fields():
+    """Test UserCreate silently ignores extra fields like first_name/last_name."""
     data = {
+        "username": "johndoe",
+        "email": "john.doe@example.com",
+        "password": "SecurePass123",
         "first_name": "John",
         "last_name": "Doe",
-        "email": "john.doe@example.com",
+    }
+    user_create = UserCreate(**data)
+    assert user_create.username == "johndoe"
+    assert not hasattr(user_create, "first_name")
+
+
+def test_user_create_invalid_email():
+    """Test UserCreate rejects invalid email."""
+    data = {
         "username": "johndoe",
+        "email": "not-an-email",
+        "password": "SecurePass123",
+    }
+    with pytest.raises(ValidationError):
+        UserCreate(**data)
+
+
+def test_user_create_invalid_password():
+    """Test UserCreate rejects a weak password."""
+    data = {
+        "username": "johndoe",
+        "email": "john.doe@example.com",
         "password": "short",
+    }
+    with pytest.raises(ValidationError):
+        UserCreate(**data)
+
+
+def test_user_create_short_username():
+    """Test UserCreate rejects a username that is too short."""
+    data = {
+        "username": "jd",
+        "email": "john.doe@example.com",
+        "password": "SecurePass123",
     }
     with pytest.raises(ValidationError):
         UserCreate(**data)
@@ -109,4 +142,3 @@ def test_user_login_invalid_password():
     data = {"username": "johndoe", "password": "short"}
     with pytest.raises(ValidationError):
         UserLogin(**data)
-
