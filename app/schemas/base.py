@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, ValidationError, model_validator
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, model_validator
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -23,7 +23,7 @@ class PasswordMixin(BaseModel):
     def validate_password(cls, values: dict) -> dict:
         password = values.get("password")
         if not password:
-            raise ValidationError("Password is required", model=cls)  # pragma: no cover
+            raise ValueError("Password is required")
         if len(password) < 6:
             raise ValueError("Password must be at least 6 characters long")
         if not any(char.isupper() for char in password):
